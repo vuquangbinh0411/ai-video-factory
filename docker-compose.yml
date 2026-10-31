@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  n8n:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai_video_factory_n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Asia/Ho_Chi_Minh
+      - TZ=Asia/Ho_Chi_Minh
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - NODE_FUNCTION_ALLOW_BUILTIN=*
+      - NODE_FUNCTION_ALLOW_EXTERNAL=*
+      # Load biến môi trường cho các Micro-scripts
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - CUSTOM_LLM_API_URL=${CUSTOM_LLM_API_URL}
+      - CUSTOM_LLM_API_KEY=${CUSTOM_LLM_API_KEY}
+      - CUSTOM_LLM_MODEL_NAME=${CUSTOM_LLM_MODEL_NAME}
+      - FB_PAGE_ID=${FB_PAGE_ID}
+      - FB_ACCESS_TOKEN=${FB_ACCESS_TOKEN}
+      - SHARED_MEDIA_DIR=/shared_media
+    volumes:
+      - ./n8n_data:/home/node/.n8n
+      - ./shared_media:/shared_media
+      - ./scripts:/scripts
+      - ./.env:/scripts/.env:ro
+    working_dir: /scripts

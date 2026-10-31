@@ -1,0 +1,371 @@
+{
+  "name": "Master AI Reels Video Factory Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Schedule Trigger (08:00 AM)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 /scripts/research_agent.py"
+      },
+      "id": "2",
+      "name": "Run Research Agent",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CUSTOM_LLM_API_URL }}/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.CUSTOM_LLM_API_KEY || $env.GEMINI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"{{ $env.CUSTOM_LLM_MODEL_NAME }}\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Bạn là đạo diễn sáng tạo kịch bản video ngắn (Facebook Reels, TikTok, YouTube Shorts) triệu view. Bạn nhận thông tin bối cảnh tin tức và chuyển thể thành 1 kịch bản video dọc 9:16 hấp dẫn từ 25-40 giây.\\nBẮT BUỘC CHỈ TRẢ VỀ JSON HỢP LỆ THEO SCHEMA SAU, KHÔNG KÈM MARKDOWN HAY BẤT KỲ VĂN BẢN NÀO KHÁC:\\n{\\n  \\\"hook\\\": \\\"Câu mở đầu gây tò mò cực độ trong 3 giây đầu\\\",\\n  \\\"script_text\\\": \\\"Toàn bộ lời thoại tiếng Việt đầy đủ để giọng đọc đọc liên tục, súc tích, nhịp điệu nhanh\\\",\\n  \\\"image_prompts\\\": [\\n    \\\"Mô tả cảnh 1 chi tiết bằng tiếng Anh chuẩn cho FLUX AI photorealistic 9:16 aspect ratio\\\",\\n    \\\"Mô tả cảnh 2 chi tiết bằng tiếng Anh chuẩn cho FLUX AI\\\",\\n    \\\"Mô tả cảnh 3 chi tiết bằng tiếng Anh chuẩn cho FLUX AI\\\",\\n    \\\"Mô tả cảnh 4 chi tiết bằng tiếng Anh chuẩn cho FLUX AI\\\"\\n  ],\\n  \\\"fb_caption\\\": \\\"Tiêu đề giật tít + tóm tắt 2 dòng + kêu gọi tương tác + 5 hashtag viral #reels #viral #khoahoc #congnghe\\\"\\n}\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Thông tin nghiên cứu được cào về:\\nChủ đề: {{ JSON.parse($json.stdout).topic }}\\nBối cảnh chi tiết: {{ JSON.parse($json.stdout).context }}\\nHãy sáng tạo kịch bản viral ngay bây giờ!\"\n    }\n  ],\n  \"temperature\": 0.7,\n  \"response_format\": { \"type\": \"json_object\" }\n}"
+      },
+      "id": "3",
+      "name": "LLM Script Generator (OpenAI Compatible)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        640,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse nội dung kịch bản trả về từ LLM\nconst rawContent = $input.item.json.choices[0].message.content;\nlet parsed;\ntry {\n  // Làm sạch nếu model bọc markdown codeblock\n  const cleaned = rawContent.replace(/```json\\n?|```/g, '').trim();\n  parsed = JSON.parse(cleaned);\n} catch (e) {\n  throw new Error('LLM không trả về JSON hợp lệ: ' + rawContent);\n}\n\nreturn {\n  json: {\n    hook: parsed.hook,\n    script_text: parsed.script_text,\n    image_prompts: parsed.image_prompts,\n    image_prompts_json: JSON.stringify(parsed.image_prompts),\n    fb_caption: parsed.fb_caption\n  }\n};"
+      },
+      "id": "4",
+      "name": "Parse & Validate LLM Schema",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        860,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=python3 /scripts/fetch_image.py --prompts-json '{{ $json.image_prompts_json.replace(/'/g, \"'\\\\''\") }}'"
+      },
+      "id": "5",
+      "name": "Generate FLUX Images (Pollinations)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=python3 /scripts/generate_tts.py --text '{{ $('Parse & Validate LLM Schema').item.json.script_text.replace(/'/g, \"'\\\\''\") }}'"
+      },
+      "id": "6",
+      "name": "Generate Vietnamese TTS (Edge-TTS)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 /scripts/generate_music.py --prompt \"Modern lo-fi tech chill, ambient cinematic background, 120 bpm\" --duration 60"
+      },
+      "id": "7",
+      "name": "Generate Music (ACE-Step 1.5)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "command": "python3 /scripts/render_video.py --output /shared_media/outputs/final_reel.mp4"
+      },
+      "id": "8",
+      "name": "Render Final MP4 (FFmpeg Ken Burns)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fileSelector": "/shared_media/outputs/final_reel.mp4"
+      },
+      "id": "9",
+      "name": "Read Final Video Binary",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1580,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.FB_PAGE_ID }}/video_reels",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "upload_phase",
+              "value": "start"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.FB_ACCESS_TOKEN }}"
+            }
+          ]
+        }
+      },
+      "id": "10",
+      "name": "Meta Reels [Phase 1: Start]",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1800,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.upload_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=OAuth {{ $env.FB_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "offset",
+              "value": "0"
+            },
+            {
+              "name": "file_size",
+              "value": "={{ $('Read Final Video Binary').item.binary.data.fileSize }}"
+            }
+          ]
+        },
+        "sendBinaryData": true,
+        "binaryPropertyName": "data"
+      },
+      "id": "11",
+      "name": "Meta Reels [Phase 2: Transfer Binary]",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2020,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.FB_PAGE_ID }}/video_reels",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "upload_phase",
+              "value": "finish"
+            },
+            {
+              "name": "video_id",
+              "value": "={{ $('Meta Reels [Phase 1: Start]').item.json.video_id }}"
+            },
+            {
+              "name": "video_state",
+              "value": "PUBLISHED"
+            },
+            {
+              "name": "description",
+              "value": "={{ $('Parse & Validate LLM Schema').item.json.fb_caption }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.FB_ACCESS_TOKEN }}"
+            }
+          ]
+        }
+      },
+      "id": "12",
+      "name": "Meta Reels [Phase 3: Finish & Publish]",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2240,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger (08:00 AM)": {
+      "main": [
+        [
+          {
+            "node": "Run Research Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Research Agent": {
+      "main": [
+        [
+          {
+            "node": "LLM Script Generator (OpenAI Compatible)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Script Generator (OpenAI Compatible)": {
+      "main": [
+        [
+          {
+            "node": "Parse & Validate LLM Schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Validate LLM Schema": {
+      "main": [
+        [
+          {
+            "node": "Generate FLUX Images (Pollinations)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate FLUX Images (Pollinations)": {
+      "main": [
+        [
+          {
+            "node": "Generate Vietnamese TTS (Edge-TTS)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Vietnamese TTS (Edge-TTS)": {
+      "main": [
+        [
+          {
+            "node": "Generate Music (ACE-Step 1.5)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Music (ACE-Step 1.5)": {
+      "main": [
+        [
+          {
+            "node": "Render Final MP4 (FFmpeg Ken Burns)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render Final MP4 (FFmpeg Ken Burns)": {
+      "main": [
+        [
+          {
+            "node": "Read Final Video Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Final Video Binary": {
+      "main": [
+        [
+          {
+            "node": "Meta Reels [Phase 1: Start]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meta Reels [Phase 1: Start]": {
+      "main": [
+        [
+          {
+            "node": "Meta Reels [Phase 2: Transfer Binary]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meta Reels [Phase 2: Transfer Binary]": {
+      "main": [
+        [
+          {
+            "node": "Meta Reels [Phase 3: Finish & Publish]",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

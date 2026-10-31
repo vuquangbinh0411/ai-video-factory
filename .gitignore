@@ -1,0 +1,46 @@
+# ==============================================================================
+# BẢO MẬT TUYỆT ĐỐI - KHÔNG ĐƯA API KEY VÀ THÔNG TIN CÁ NHÂN LÊN GIT
+# ==============================================================================
+
+# 1. File môi trường chứa API Key & Secrets
+.env
+.env.local
+.env.*.local
+*.env
+providers_config.json
+
+# 2. Dữ liệu Media tạm thời, cache và thành phẩm video cá nhân
+shared_media/temp/*
+!shared_media/temp/.gitkeep
+shared_media/outputs/*
+!shared_media/outputs/.gitkeep
+
+# 3. Dữ liệu n8n container
+n8n_data/*
+!n8n_data/.gitkeep
+
+# 4. Thư mục Scratch & Script thử nghiệm tạm thời
+scratch/
+*.log
+*.tmp
+
+# 5. Python runtime & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# 6. IDE & Hệ điều hành
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini

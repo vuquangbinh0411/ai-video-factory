@@ -1,0 +1,82 @@
+{
+  "active_provider": "gemini",
+  "providers": {
+    "gemini": {
+      "name": "Google Gemini (0 đồng)",
+      "icon": "fa-wand-magic-sparkles",
+      "color": "from-indigo-500 to-purple-600",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "api_key": "",
+      "selected_model": "gemini-2.0-flash",
+      "models": [
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-2.5-flash",
+        "gemini-2.0-flash-lite",
+        "gemini-1.5-pro",
+        "gemini-2.5-pro"
+      ],
+      "description": "Google AI Studio chính hãng (Miễn phí 1.500 lượt/ngày)"
+    },
+    "oxion": {
+      "name": "Oxion AI",
+      "icon": "fa-bolt",
+      "color": "from-cyan-500 to-blue-600",
+      "base_url": "https://oxionai.com/v1",
+      "api_key": "",
+      "selected_model": "gemini-3.7-flash",
+      "models": [
+        "gemini-3.7-flash",
+        "deepseek-v4-flash-0731",
+        "deepseek-v4-pro-max",
+        "claude-sonnet-5",
+        "claude-opus-4.8",
+        "gpt-5.5",
+        "grok-4.5"
+      ],
+      "description": "Nền tảng Oxion AI (hỗ trợ nhiều model Claude, DeepSeek, GPT, Gemini)"
+    },
+    "deepseek": {
+      "name": "DeepSeek API",
+      "icon": "fa-brain",
+      "color": "from-blue-600 to-indigo-700",
+      "base_url": "https://api.deepseek.com/v1",
+      "api_key": "",
+      "selected_model": "deepseek-chat",
+      "models": [
+        "deepseek-chat",
+        "deepseek-reasoner"
+      ],
+      "description": "DeepSeek V3 / R1 chính hãng (siêu thông minh, chi phí cực rẻ)"
+    },
+    "groq": {
+      "name": "Groq Cloud (0 đồng)",
+      "icon": "fa-forward-fast",
+      "color": "from-orange-500 to-amber-600",
+      "base_url": "https://api.groq.com/openai/v1",
+      "api_key": "",
+      "selected_model": "llama-3.3-70b-versatile",
+      "models": [
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+        "mixtral-8x7b-32768",
+        "deepseek-r1-distill-llama-70b"
+      ],
+      "description": "Tốc độ xử lý siêu tốc cực đại (Miễn phí hoàn toàn)"
+    },
+    "custom": {
+      "name": "Tùy Chỉnh (OpenAI Compatible)",
+      "icon": "fa-sliders",
+      "color": "from-emerald-500 to-teal-600",
+      "base_url": "https://api.openai.com/v1",
+      "api_key": "",
+      "selected_model": "gpt-4o-mini",
+      "models": [
+        "gpt-4o-mini",
+        "gpt-4o",
+        "claude-3-5-sonnet"
+      ],
+      "description": "Kết nối bất kỳ máy chủ LLM tương thích OpenAI chuẩn v1"
+    }
+  }
+}
